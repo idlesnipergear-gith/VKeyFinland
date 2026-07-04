@@ -1447,6 +1447,43 @@ void TypingEngine::EraseConsumedRaw(size_t idx) {
 //-----------------------------------------------------------------------------
 
 void TypingEngine::ProcessChar(wchar_t /*c*/, wchar_t lower, bool isUpper) {
+    // Kiểm tra nếu trong bộ nhớ đệm (states_) đã có ký tự được gõ trước đó
+    if (!states_.empty()) {
+        // Lấy ra ký tự chữ cái vừa gõ liền trước
+        wchar_t prevChar = states_.back().base;
+
+        // =======================================================
+        // 1. XỬ LÝ KIỂU GÕ TELEX (Bấm phím 'v' sau chữ 'a' hoặc 'o')
+        // =======================================================
+        if (lower == L'v') {
+            // Nếu chữ trước là 'a' hoặc 'A'
+            if (prevChar == L'a' || prevChar == L'A') {
+                states_.back().base = isUpper ? L'Ä' : L'ä'; // Tự động hoa/thường theo phím gõ
+                return; // Thoát ngay lập tức
+            }
+            // Nếu chữ trước là 'o' hoặc 'O'
+            if (prevChar == L'o' || prevChar == L'O') {
+                states_.back().base = isUpper ? L'Ö' : L'ö';
+                return; // Thoát luôn
+            }
+        }
+
+        // =======================================================
+        // 2. XỬ LÝ KIỂU GÕ VNI (Bấm phím số '0' sau chữ 'a' hoặc 'o')
+        // =======================================================
+        if (lower == L'0') {
+            // Nếu chữ trước là 'a' hoặc 'A'
+            if (prevChar == L'a' || prevChar == L'A') {
+                states_.back().base = states_.back().isUpper ? L'Ä' : L'ä'; // Giữ nguyên trạng thái hoa/thường của chữ trước đó
+                return; // Chữ nhảy ra tức thì
+            }
+            // Nếu chữ trước là 'o' hoặc 'O'
+            if (prevChar == L'o' || prevChar == L'O') {
+                states_.back().base = states_.back().isUpper ? L'Ö' : L'ö';
+                return; // Hoàn thành quy trình
+            }
+        }
+    }
     CharState s;
     s.base = lower;
     s.isUpper = isUpper;
